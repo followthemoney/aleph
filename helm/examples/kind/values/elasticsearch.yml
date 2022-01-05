@@ -1,22 +1,15 @@
 ---
-nodeGroup: "master"
-masterService: "aleph-index-master"
 clusterName: "aleph-index"
 
-roles:
-  master: "true"
-  ingest: "false"
-  data: "false"
-  ml: "false"
-  remote_cluster_client: "false"
-
-replicas: 2
+replicas: 1
+minimumMasterNodes: 1
+clusterHealthCheckParams: 'wait_for_status=yellow&timeout=1s'
 
 image: "ghcr.io/alephdata/aleph-elasticsearch"
 imageTag: "3bb5dbed97cfdb9955324d11e5c623a5c5bbc410"
 imagePullPolicy: "IfNotPresent"
 
-esJavaOpts: "-Xmx1g -Xms1g"
+esJavaOpts: "-Xmx512m -Xms512m"
 esConfig:
   elasticsearch.yml: |
     xpack:
@@ -27,19 +20,19 @@ esConfig:
       security:
         enabled: "false"
 
+# Allocate smaller chunks of memory per pod.
 resources:
   requests:
     cpu: "300m"
-    memory: "1500Mi"
+    memory: "1G"
   limits:
     cpu: "600m"
-    memory: "2000Mi"
+    memory: "1G"
 
 volumeClaimTemplate:
   accessModes:
     - "ReadWriteOnce"
   resources:
     requests:
-      storage: 1Gi
+      storage: 6Gi
 
-antiAffinity: disable
