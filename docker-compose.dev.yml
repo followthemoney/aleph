@@ -58,6 +58,34 @@ services:
     env_file:
       - aleph.env
 
+  app:
+    build:
+      context: .
+    image: alephdata/aleph:${ALEPH_TAG:-latest}
+    hostname: aleph
+    command: /bin/bash
+    depends_on:
+      - postgres
+      - elasticsearch
+      - redis
+      - extractmeta
+      - ingest-file
+    tmpfs: /tmp
+    volumes:
+      - archive-data:/data
+      - "./aleph:/aleph/aleph"
+      - "./site:/aleph/site"
+      - "./contrib:/aleph/contrib"
+      - "./mappings:/aleph/mappings"
+      - "~:/host"
+    cap_add:
+      - SYS_PTRACE
+    environment:
+      ALEPH_DEBUG: "true"
+      ALEPH_SECRET_KEY: "development"
+    env_file:
+      - aleph.env
+
   worker:
     image: alephdata/aleph:${ALEPH_TAG:-3.12.0}
     command: aleph worker

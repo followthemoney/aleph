@@ -23,6 +23,9 @@ upgrade: build
 api: services
 	$(COMPOSE) up --abort-on-container-exit api
 
+extractmeta: services
+	$(COMPOSE) up --force-recreate --no-deps extractmeta
+
 web: services
 	$(COMPOSE) up api ui worker
 
