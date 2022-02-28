@@ -190,6 +190,56 @@ ingestfile:
           name: cpu
           targetAverageUtilization: 100
 
+
+# extractmeta Service - templates/extract-meta.yaml
+extractmeta:
+  strategy:
+    rollingUpdate:
+      maxSurge: 20
+      maxUnavailable: 100%
+    type: RollingUpdate
+
+  podAnnotations:
+    "cluster-autoscaler.kubernetes.io/safe-to-evict": "true"
+
+  nodeSelector: {}
+
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  terminationGracePeriodSeconds: 300
+
+  image:
+    repository: ghcr.io/ftmnl/extractmeta
+    tag: "0.2.0"
+    pullPolicy: Always
+
+  containerSecurityContext:
+    readOnlyRootFilesystem: true
+
+  containerResources:
+    requests:
+      cpu: 300m
+      memory: 300Mi
+    limits:
+      # cpu: 1000m
+      memory: 500Mi
+
+  env:
+    WORKER_THREADS: 0
+
+  hpa:
+    minReplicas: 1
+    maxReplicas: 2
+    scalingMetrics:
+      - type: Resource
+        resource:
+          name: cpu
+          targetAverageUtilization: 100
+
+
 # Aleph UI - templates/ui.yaml
 ui:
   replicas: 2

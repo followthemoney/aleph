@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.global.namingPrefix }}-extract-meta
+  labels:
+    app: {{ .Values.global.namingPrefix }}-extract-meta
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.global.namingPrefix }}-extract-meta
+  strategy: {{- toYaml .Values.extractmeta.strategy | nindent 4 }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.global.namingPrefix }}-extract-meta
+      annotations: {{- toYaml .Values.extractmeta.podAnnotations | nindent 8 }}
+    spec:
+      nodeSelector: {{- toYaml .Values.extractmeta.nodeSelector | nindent 8 }}
+      restartPolicy: Always
+      securityContext: {{- toYaml .Values.extractmeta.podSecurityContext | nindent 8 }}
+      {{ if .Values.extractmeta.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml .Values.extractmeta.imagePullSecrets | nindent 8 }}
+      {{ end }}
+      terminationGracePeriodSeconds:
+        {{ .Values.extractmeta.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.extractmeta.image.repository }}:{{ .Values.extractmeta.image.tag }}"
+          imagePullPolicy: {{ .Values.extractmeta.image.pullPolicy }}
+          command:
+            - extractmeta
+            - worker
+          ports:
+            - containerPort: 3000
+              name: http
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+          securityContext:
+            {{- toYaml .Values.extractmeta.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.extractmeta.containerResources | nindent 12 }}
+          env:
+            {{- range $key, $value := .Values.global.commonEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}  
+            {{- range $key, $value := .Values.extractmeta.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }} 
+            - name: FTM_STORE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: aleph-secrets
+                  key: FTM_STORE_URI
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.global.namingPrefix }}-extract-meta
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.global.namingPrefix }}-extract-meta
+  minReplicas: {{.Values.extractmeta.hpa.minReplicas}}
+  maxReplicas: {{.Values.extractmeta.hpa.maxReplicas}}
+  metrics: {{- toYaml .Values.extractmeta.hpa.scalingMetrics | nindent 4}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.global.namingPrefix }}-extract-meta-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Values.global.namingPrefix }}-extract-meta
+  policyTypes:
+    - Ingress
