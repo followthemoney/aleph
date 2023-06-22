@@ -26,17 +26,9 @@ services:
       - "http.cors.allow-headers=*"
       - "http.cors.allow-credentials=true"
     ports:
-      - "127.0.0.1:19200:9200"
+      - "9200:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-
-  dejavu:
-    image: appbaseio/dejavu:3.6.0
-    container_name: dejavu
-    ports:
-      - '1358:1358'
-    depends_on:
-      - elasticsearch
 
   redis:
     image: redis:alpine
