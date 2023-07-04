@@ -20,14 +20,6 @@ from aleph.search.utils import get_index_field_type
 
 log = structlog.get_logger(__name__)
 
-
-def convert_filters(filters):
-    ret = []
-    for field, values in filters.items():
-        ret.append(field_filter_query(field, values))
-    return ret
-
-
 class Query(object):
     TEXT_FIELDS = ["text"]
     PREFIX_FIELD = "name"
