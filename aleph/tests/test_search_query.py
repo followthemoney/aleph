@@ -118,32 +118,14 @@ class QueryTestCase(TestCase):
         self.assertEqual(
             q.get_highlight(),
             {
-                "encoder": "html",
+                "type": "plain",
                 "fields": {
                     "text": {
-                        "highlight_query": {
-                            "query_string": {
-                                "query": "foo",
-                                "lenient": True,
-                                "fields": ["text"],
-                                "default_operator": "AND",
-                                "minimum_should_match": "66%",
-                            },
-                        },
                         "require_field_match": False,
                         "number_of_fragments": 3,
-                        "fragment_size": 120,
                         "max_analyzed_offset": 999999,
+                        "fragment_size": 120,
                     },
                 },
             },
-        )
-
-    def test_highlight_text(self):
-        q = query([("q", "foo"), ("highlight", "true"), ("highlight_text", "bar")])
-        highlight = q.get_highlight()
-
-        self.assertEqual(
-            highlight["fields"]["text"]["highlight_query"]["query_string"]["query"],
-            "bar",
         )

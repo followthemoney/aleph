@@ -208,8 +208,6 @@ class Query(object):
         return list(reversed(sort_fields))
 
     def get_highlight(self):
-        if not self.parser.highlight:
-            return {}
         return {
             "type": "plain",
             "fields": {
@@ -218,7 +216,6 @@ class Query(object):
                     "fragment_size": self.parser.highlight_length,
                     "max_analyzed_offset": self.parser.max_highlight_analyzed_offset,
                     "number_of_fragments": self.parser.highlight_count,
-                    "fragment_size": 120,
                 }
             },
         }
@@ -234,9 +231,12 @@ class Query(object):
             "size": self.parser.limit,
             "aggregations": self.get_aggregations(),
             "sort": self.get_sort(),
-            "highlight": self.get_highlight(),
             "_source": self.get_source(),
         }
+
+        if self.parser.highlight:
+            body["highlight"] = self.get_highlight()
+
         # log.info("Query: %s", pformat(body))
         return body
 
