@@ -4,7 +4,7 @@ from pprint import pprint  # noqa
 from banal import ensure_list
 from followthemoney.types import registry
 
-from aleph.index.util import bool_query, none_query
+from aleph.index.util import none_query
 
 log = logging.getLogger(__name__)
 
@@ -44,16 +44,17 @@ def match_query(proxy, collection_ids=None, query=None):
     """Given a document or entity in indexed form, build a query that
     will find similar entities based on a variety of criteria."""
     if query is None:
-        query = bool_query()
+        query = {
+            "bool": {
+                "should": [], 
+                "filter": [],
+                "must": [], 
+                "must_not": []
+            }
+        }
 
-    # Don't match the query entity and source collection_id:
-    must_not = []
     if proxy.id is not None:
-        must_not.append({"ids": {"values": [proxy.id]}})
-    # if source_collection_id is not None:
-    #     must_not.append({'term': {'collection_id': source_collection_id}})
-    if len(must_not):
-        query["bool"]["must_not"].extend(must_not)
+        query["bool"]["must_not"].append({"ids": {"values": [proxy.id]}})
 
     collection_ids = ensure_list(collection_ids)
     if len(collection_ids):

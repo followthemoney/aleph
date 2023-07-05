@@ -105,16 +105,12 @@ def authz_query(authz, field="collection_id"):
     return {"terms": {field: collections}}
 
 
-def bool_query():
-    return {"bool": {"should": [], "filter": [], "must": [], "must_not": []}}
-
-
-def none_query(query=None):
-    if query is None:
-        query = bool_query()
-    query["bool"]["must"].append({"match_none": {}})
-    return query
-
+def none_query():
+    return {
+        "bool": {
+            "must": [{"match_none": {}}], 
+        }
+    }
 
 def field_filter_query(field, values):
     """Need to define work-around for full-text fields."""
