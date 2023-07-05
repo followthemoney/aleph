@@ -10,7 +10,6 @@ from aleph.index.util import (
     field_filter_query,
     DATE_FORMAT,
     range_filter_query,
-    query_string_query,
     filter_text,
 )
 from aleph.search.result import SearchQueryResult
@@ -38,12 +37,21 @@ class Query(object):
     def get_text_query(self):
         query = []
         if self.parser.text:
-            qs = query_string_query(self.TEXT_FIELDS, self.parser.text)
-            query.append(qs)
+            query.append({
+                "query_string": {
+                    "query": self.parser.text,
+                    "lenient": True,
+                    "fields": self.TEXT_FIELDS,
+                    "default_operator": "AND",
+                    "minimum_should_match": "66%",
+                }
+            })
         if self.parser.prefix:
-            query.append(
-                {"match_phrase_prefix": {self.PREFIX_FIELD: self.parser.prefix}}
-            )
+            query.append({
+                "match_phrase_prefix": {
+                    self.PREFIX_FIELD: self.parser.prefix
+                }
+            })
         if not len(query):
             query.append({"match_all": {}})
         return query
