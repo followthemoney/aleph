@@ -3,7 +3,7 @@ import logging
 from aleph.core import cache
 from aleph.model import EntitySet, EntitySetItem, Events
 from aleph.logic.entities import upsert_entity, refresh_entity
-from aleph.logic.collections import index_aggregator
+from aleph.logic.collections import index_entities
 from aleph.logic.aggregator import get_aggregator
 from aleph.logic.notifications import publish
 
@@ -54,7 +54,8 @@ def save_entityset_item(entityset, collection, entity_id, **data):
 
         aggregator = get_aggregator(collection)
         profile_fragments(collection, aggregator, entity_id=entity_id)
-        index_aggregator(collection, aggregator, entity_ids=[entity_id])
+        entities = aggregator.iterate(entity_id=[entity_id])
+        index_entities(collection, entities)
         refresh_entity(collection, entity_id)
     collection.touch()
     refresh_entityset(entityset.id)

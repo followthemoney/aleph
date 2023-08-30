@@ -7,7 +7,7 @@ from aleph.model import Mapping, Events, Status
 from aleph.index.entities import get_entity
 from aleph.logic.aggregator import get_aggregator
 from aleph.index.collections import delete_entities
-from aleph.logic.collections import update_collection, index_aggregator, aggregate_model
+from aleph.logic.collections import update_collection, index_entities, aggregate_model
 from aleph.logic.entitysets import save_entityset_item
 from aleph.logic.notifications import publish
 
@@ -91,7 +91,7 @@ def load_mapping(collection, mapping_id, sync=False):
     try:
         map_to_aggregator(collection, mapping, aggregator)
         aggregate_model(collection, aggregator)
-        index_aggregator(collection, aggregator, sync=sync)
+        index_entities(collection, aggregator.iterate(), sync=sync)
         mapping.set_status(status=Status.SUCCESS)
         collection.touch()
         db.session.commit()
