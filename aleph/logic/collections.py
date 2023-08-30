@@ -115,12 +115,9 @@ def aggregate_model(collection, aggregator):
     writer.flush()
 
 
-def index_aggregator(
-    collection, aggregator, entity_ids=None, skip_errors=False, sync=False
-):
+def index_entities(collection, entities, sync=False):
     def _generate():
         idx = 0
-        entities = aggregator.iterate(entity_id=entity_ids, skip_errors=skip_errors)
         for idx, proxy in enumerate(entities, 1):
             if idx > 0 and idx % 1000 == 0:
                 log.debug("[%s] Index: %s...", collection, idx)
@@ -162,7 +159,8 @@ def reindex_collection(collection, skip_errors=True, sync=False, flush=False):
     if flush:
         log.debug("[%s] Flushing...", collection)
         index.delete_entities(collection.id, sync=True)
-    index_aggregator(collection, aggregator, skip_errors=skip_errors, sync=sync)
+    entities = aggregator.iterate(skip_errors=skip_errors)
+    index_entities(collection, entities, sync=sync)
     compute_collection(collection, force=True)
 
 

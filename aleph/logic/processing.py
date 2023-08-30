@@ -5,7 +5,7 @@ from followthemoney.types import registry
 from followthemoney.exc import InvalidData
 from followthemoney.helpers import remove_checksums
 
-from aleph.logic.collections import index_aggregator, refresh_collection
+from aleph.logic.collections import index_entities, refresh_collection
 from aleph.logic.aggregator import get_aggregator
 
 log = logging.getLogger(__name__)
@@ -23,7 +23,8 @@ def index_many(stage, collection, sync=False, entity_ids=None, batch=BATCH_SIZE)
             entity_ids.extend(ensure_list(task.payload.get("entity_ids")))
         stage.mark_done(len(tasks))
     aggregator = get_aggregator(collection)
-    index_aggregator(collection, aggregator, entity_ids=entity_ids, sync=sync)
+    entities = aggregator.iterate(entity_id=entity_ids)
+    index_entities(collection, entities, sync=sync)
     refresh_collection(collection.id)
 
 
