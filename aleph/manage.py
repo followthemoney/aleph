@@ -20,11 +20,16 @@ from aleph.queues import get_status, cancel_queue
 from aleph.queues import get_active_dataset_status
 from aleph.index.admin import delete_index
 from aleph.index.entities import iter_proxies
-from aleph.logic.collections import create_collection, update_collection
-from aleph.logic.collections import delete_collection, reindex_collection
-from aleph.logic.collections import upgrade_collections, reingest_collection
-from aleph.logic.collections import compute_collection
-from aleph.logic.processing import bulk_write
+from aleph.logic.collections import (
+    create_collection,
+    update_collection,
+    delete_collection,
+    reindex_collection,
+    upgrade_collections,
+    reingest_collection,
+    compute_collection,
+)
+from aleph.logic.ftmstore import bulk_write_entities
 from aleph.logic.mapping import cleanup_mappings
 from aleph.logic.documents import crawl_directory
 from aleph.logic.archive import cleanup_archive
@@ -270,7 +275,7 @@ def load_entities(foreign_id, infile, safe=False, mutable=False):
             yield json.loads(line)
 
     role = Role.load_cli_user()
-    for _ in bulk_write(
+    for _ in bulk_write_entities(
         collection, read_entities(), safe=safe, mutable=mutable, role_id=role.id
     ):
         pass
