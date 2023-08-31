@@ -77,11 +77,11 @@ def get_active_dataset_status():
 
 def get_context(collection, pipeline):
     """Set some task context variables that configure the ingestors."""
-    from aleph.logic.aggregator import get_aggregator_name
+    from aleph.logic.ftmstore import get_ftmstore_name
 
     return {
         "languages": collection.languages,
-        "ftmstore": get_aggregator_name(collection),
+        "ftmstore": get_ftmstore_name(collection),
         "namespace": collection.foreign_id,
         "pipeline": pipeline,
     }

@@ -13,7 +13,7 @@ from aleph.index import xref as xref_index
 from aleph.index import entities as entities_index
 from aleph.logic.notifications import publish, flush_notifications
 from aleph.logic.documents import ingest_flush, MODEL_ORIGIN
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 
 log = logging.getLogger(__name__)
 
@@ -100,17 +100,17 @@ def compute_collection(collection, force=False, sync=False):
     index.index_collection(collection, sync=sync)
 
 
-def aggregate_model(collection, aggregator):
-    """Sync up the aggregator from the Aleph domain model."""
+def aggregate_model(collection, ftmstore):
+    """Sync up the ftmstore from the Aleph domain model."""
     log.debug("[%s] Aggregating model...", collection)
-    aggregator.delete(origin=MODEL_ORIGIN)
-    writer = aggregator.bulk()
+    ftmstore.delete(origin=MODEL_ORIGIN)
+    writer = ftmstore.bulk()
     for document in Document.by_collection(collection.id):
         proxy = document.to_proxy(ns=collection.ns)
         writer.put(proxy, fragment="db", origin=MODEL_ORIGIN)
     for entity in Entity.by_collection(collection.id):
         proxy = entity.to_proxy()
-        aggregator.delete(entity_id=proxy.id)
+        ftmstore.delete(entity_id=proxy.id)
         writer.put(proxy, fragment="db", origin=MODEL_ORIGIN)
     writer.flush()
 
@@ -140,26 +140,26 @@ def reingest_collection(
 
 
 def reindex_collection(collection, skip_errors=True, sync=False, flush=False):
-    """Re-index all entities from the model, mappings and aggregator cache."""
-    from aleph.logic.mapping import map_to_aggregator
+    """Re-index all entities from the model, mappings and ftmstore cache."""
+    from aleph.logic.mapping import map_to_ftmstore
     from aleph.logic.profiles import profile_fragments
 
-    aggregator = get_aggregator(collection)
+    ftmstore = get_ftmstore(collection)
     for mapping in collection.mappings:
         if mapping.disabled:
             log.debug("[%s] Skip mapping: %r", collection, mapping)
             continue
         try:
-            map_to_aggregator(collection, mapping, aggregator)
+            map_to_ftmstore(collection, mapping, ftmstore)
         except Exception:
             # More or less ignore broken models.
             log.exception("Failed mapping: %r", mapping)
-    aggregate_model(collection, aggregator)
-    profile_fragments(collection, aggregator)
+    aggregate_model(collection, ftmstore)
+    profile_fragments(collection, ftmstore)
     if flush:
         log.debug("[%s] Flushing...", collection)
         index.delete_entities(collection.id, sync=True)
-    entities = aggregator.iterate(skip_errors=skip_errors)
+    entities = ftmstore.iterate(skip_errors=skip_errors)
     index_entities(collection, entities, sync=sync)
     compute_collection(collection, force=True)
 
@@ -167,8 +167,8 @@ def reindex_collection(collection, skip_errors=True, sync=False, flush=False):
 def delete_collection(collection, keep_metadata=False, sync=False):
     deleted_at = collection.deleted_at or datetime.utcnow()
     cancel_queue(collection)
-    aggregator = get_aggregator(collection)
-    aggregator.delete()
+    ftmstore = get_ftmstore(collection)
+    ftmstore.delete()
     flush_notifications(collection, sync=sync)
     index.delete_entities(collection.id, sync=sync)
     xref_index.delete_xref(collection, sync=sync)
@@ -182,7 +182,7 @@ def delete_collection(collection, keep_metadata=False, sync=False):
     db.session.commit()
     if not keep_metadata:
         index.delete_collection(collection.id, sync=True)
-        aggregator.drop()
+        ftmstore.drop()
     refresh_collection(collection.id)
     Authz.flush()
 

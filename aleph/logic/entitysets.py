@@ -4,7 +4,7 @@ from aleph.core import cache
 from aleph.model import EntitySet, EntitySetItem, Events
 from aleph.logic.entities import upsert_entity, refresh_entity
 from aleph.logic.collections import index_entities
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 from aleph.logic.notifications import publish
 
 log = logging.getLogger(__name__)
@@ -52,9 +52,9 @@ def save_entityset_item(entityset, collection, entity_id, **data):
     if entityset.type == EntitySet.PROFILE and entityset.collection_id == collection.id:
         from aleph.logic.profiles import profile_fragments
 
-        aggregator = get_aggregator(collection)
-        profile_fragments(collection, aggregator, entity_id=entity_id)
-        entities = aggregator.iterate(entity_id=[entity_id])
+        ftmstore = get_ftmstore(collection)
+        profile_fragments(collection, ftmstore, entity_id=entity_id)
+        entities = ftmstore.iterate(entity_id=[entity_id])
         index_entities(collection, entities)
         refresh_entity(collection, entity_id)
     collection.touch()

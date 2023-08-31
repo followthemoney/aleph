@@ -6,14 +6,14 @@ from followthemoney.exc import InvalidData
 from followthemoney.helpers import remove_checksums
 
 from aleph.logic.collections import index_entities, refresh_collection
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 
 log = logging.getLogger(__name__)
 BATCH_SIZE = 100
 
 
 def index_many(stage, collection, sync=False, entity_ids=None, batch=BATCH_SIZE):
-    """Project the contents of the collections aggregator into the index."""
+    """Project the contents of the collections ftmstore into the index."""
     if entity_ids is not None:
         entity_ids = ensure_list(entity_ids)
         # WEIRD: Instead of indexing a single entity, this will try
@@ -22,8 +22,8 @@ def index_many(stage, collection, sync=False, entity_ids=None, batch=BATCH_SIZE)
         for task in tasks:
             entity_ids.extend(ensure_list(task.payload.get("entity_ids")))
         stage.mark_done(len(tasks))
-    aggregator = get_aggregator(collection)
-    entities = aggregator.iterate(entity_id=entity_ids)
+    ftmstore = get_ftmstore(collection)
+    entities = ftmstore.iterate(entity_id=entity_ids)
     index_entities(collection, entities, sync=sync)
     refresh_collection(collection.id)
 
@@ -31,8 +31,8 @@ def index_many(stage, collection, sync=False, entity_ids=None, batch=BATCH_SIZE)
 def bulk_write(collection, entities, safe=False, role_id=None, mutable=True):
     """Write a set of entities - given as dicts - to the index."""
     # This is called mainly by the /api/2/collections/X/_bulk API.
-    aggregator = get_aggregator(collection)
-    writer = aggregator.bulk()
+    ftmstore = get_ftmstore(collection)
+    writer = ftmstore.bulk()
     for data in entities:
         entity = model.get_proxy(data, cleaned=False)
         entity = collection.ns.apply(entity)

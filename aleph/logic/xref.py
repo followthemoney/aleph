@@ -23,7 +23,7 @@ from aleph.model import EntitySet
 from aleph.authz import Authz
 from aleph.logic import resolver
 from aleph.logic.collections import reindex_collection
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 from aleph.logic.matching import match_query
 from aleph.logic.util import entity_url
 from aleph.index.xref import index_matches, delete_xref, iter_matches
@@ -161,9 +161,9 @@ def _iter_mentions(collection):
 
 
 def _query_mentions(collection):
-    aggregator = get_aggregator(collection, origin=ORIGIN)
-    aggregator.delete(origin=ORIGIN)
-    writer = aggregator.bulk()
+    ftmstore = get_ftmstore(collection, origin=ORIGIN)
+    ftmstore.delete(origin=ORIGIN)
+    writer = ftmstore.bulk()
     for proxy in _iter_mentions(collection):
         schemata = set()
         countries = set()

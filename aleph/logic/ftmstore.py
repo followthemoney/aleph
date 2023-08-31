@@ -5,11 +5,11 @@ log = logging.getLogger(__name__)
 MODEL_ORIGIN = "model"
 
 
-def get_aggregator_name(collection):
+def get_ftmstore_name(collection):
     return "collection_%s" % collection.id
 
 
-def get_aggregator(collection, origin="aleph"):
+def get_ftmstore(collection, origin="aleph"):
     """Connect to a followthemoney dataset."""
-    dataset = get_aggregator_name(collection)
+    dataset = get_ftmstore_name(collection)
     return get_dataset(dataset, origin=origin)
