@@ -21,7 +21,7 @@ TYPE_MAPPINGS = {
 }
 
 
-def schema_index(schema, version):
+def schema_index_name(schema, version):
     """Convert a schema object to an index name."""
     if schema.abstract:
         raise InvalidData("Cannot index abstract schema: %s" % schema)
@@ -47,7 +47,7 @@ def entities_index_list(schema=None, expand=True):
     """Combined index to run all queries against."""
     for schema in schema_scope(schema, expand=expand):
         for version in SETTINGS.INDEX_READ:
-            yield schema_index(schema, version)
+            yield schema_index_name(schema, version)
 
 
 def entities_read_index(schema=None, expand=True):
@@ -58,7 +58,7 @@ def entities_read_index(schema=None, expand=True):
 def entities_write_index(schema):
     """Index that us currently written by new queries."""
     schema = model.get(schema)
-    return schema_index(schema, SETTINGS.INDEX_WRITE)
+    return schema_index_name(schema, SETTINGS.INDEX_WRITE)
 
 
 def configure_entities():
@@ -125,6 +125,6 @@ def configure_schema(schema, version):
             "updated_at": {"type": "date"},
         },
     }
-    index = schema_index(model.get(schema), version)
+    index_name = schema_index_name(model.get(schema), version)
     settings = index_settings(shards=get_shard_weight(schema))
-    return configure_index(index, mapping, settings)
+    return configure_index(index_name, mapping, settings)
