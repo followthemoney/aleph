@@ -223,7 +223,6 @@ def format_proxy(proxy, collection):
     if len(updated_at) > 0:
         data["updated_at"] = max(updated_at)
 
-    # log.info("%s", pformat(data))
     entity_id = data.pop("id")
     return {
         "_id": entity_id,

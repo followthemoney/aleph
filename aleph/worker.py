@@ -1,4 +1,5 @@
 import structlog
+from banal import ensure_list
 from servicelayer.jobs import Dataset
 from servicelayer.worker import Worker
 from servicelayer.logs import apply_task_context
@@ -21,12 +22,16 @@ from aleph.queues import (
     OP_PRUNE_ENTITY,
 )
 from aleph.logic.alerts import check_alerts
-from aleph.logic.collections import reingest_collection, reindex_collection
-from aleph.logic.collections import compute_collections, refresh_collection
+from aleph.logic.collections import (
+    reingest_collection,
+    reindex_collection,
+    index_collection,
+    compute_collections,
+    refresh_collection,
+)
 from aleph.logic.notifications import generate_digest, delete_old_notifications
 from aleph.logic.roles import update_roles
 from aleph.logic.export import delete_expired_exports, export_entities
-from aleph.logic.processing import index_many
 from aleph.logic.xref import xref_collection, export_matches
 from aleph.logic.entities import update_entity, prune_entity
 from aleph.logic.mapping import load_mapping, flush_mapping
@@ -35,10 +40,24 @@ log = structlog.get_logger(__name__)
 
 app = create_app(config={"SERVER_NAME": SETTINGS.APP_UI_URL})
 
+BATCH_SIZE = 100
+
 
 def op_index(collection, task):
     sync = task.context.get("sync", False)
-    index_many(task.stage, collection, sync=sync, **task.payload)
+    entity_ids = task.payload.get("entity_ids")
+    batch = task.payload.get("batch", BATCH_SIZE)
+
+    if entity_ids is not None:
+        entity_ids = ensure_list(entity_ids)
+        # WEIRD: Instead of indexing a single entity, this will try
+        # pull a whole batch of them off the queue and do it at once.
+        tasks = task.stage.get_tasks(limit=max(1, batch - len(entity_ids)))
+        for task in tasks:
+            entity_ids.extend(ensure_list(task.payload.get("entity_ids")))
+        task.stage.mark_done(len(tasks))
+
+    index_collection(collection, sync=sync, entity_ids=entity_ids)
 
 
 def op_reingest(collection, task):

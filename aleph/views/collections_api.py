@@ -8,9 +8,9 @@ from aleph.queues import OP_REINGEST, OP_REINDEX, OP_INDEX
 from aleph.logic.collections import create_collection, update_collection
 from aleph.logic.collections import delete_collection, refresh_collection
 from aleph.logic.collections import get_deep_collection
+from aleph.logic.ftmstore import bulk_write_entities
 from aleph.logic.entitysets import save_entityset_item
 from aleph.index.collections import update_collection_stats
-from aleph.logic.processing import bulk_write
 from aleph.views.serializers import CollectionSerializer
 from aleph.views.util import get_db_collection, get_index_collection, get_entityset
 from aleph.views.util import require, parse_request, jsonify
@@ -269,7 +269,7 @@ def bulk(collection_id):
     mutable = get_flag("mutable", default=False)
     entities = ensure_list(request.get_json(force=True))
     entity_ids = list()
-    for entity_id in bulk_write(
+    for entity_id in bulk_write_entities(
         collection, entities, safe=safe, mutable=mutable, role_id=request.authz.id
     ):
         entity_ids.append(entity_id)

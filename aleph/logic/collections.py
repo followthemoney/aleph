@@ -6,8 +6,15 @@ from servicelayer.jobs import Job
 from aleph.core import db, cache
 from aleph.authz import Authz
 from aleph.queues import cancel_queue, ingest_entity, get_status
-from aleph.model import Collection, Entity, Document, Mapping
-from aleph.model import Permission, Events, EntitySet
+from aleph.model import (
+    Collection,
+    Entity,
+    Document,
+    Mapping,
+    Permission,
+    Events,
+    EntitySet,
+)
 from aleph.index import collections as index
 from aleph.index import xref as xref_index
 from aleph.index import entities as entities_index
@@ -137,6 +144,14 @@ def reingest_collection(
     for document in Document.by_collection(collection.id):
         proxy = document.to_proxy(ns=collection.ns)
         ingest_entity(collection, proxy, job_id=job_id, index=index)
+
+
+def index_collection(collection, sync=False, entity_ids=None):
+    """Project the contents of the collections ftmstore into the index."""
+    ftmstore = get_ftmstore(collection)
+    entities = ftmstore.iterate(entity_id=entity_ids)
+    index_entities(collection, entities, sync=sync)
+    refresh_collection(collection.id)
 
 
 def reindex_collection(collection, skip_errors=True, sync=False, flush=False):

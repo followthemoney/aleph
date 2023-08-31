@@ -1,6 +1,5 @@
 import logging
 from banal import ensure_dict
-from pprint import pformat  # noqa
 from flask_babel import gettext
 from followthemoney import model
 from followthemoney.types import registry
