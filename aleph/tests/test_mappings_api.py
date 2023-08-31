@@ -7,7 +7,7 @@ from followthemoney.proxy import EntityProxy
 
 from aleph.core import archive
 from aleph.index.entities import index_proxy
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 from aleph.views.util import validate
 from aleph.tests.util import TestCase
 
@@ -18,8 +18,8 @@ class MappingAPITest(TestCase):
     def setUp(self):
         super(MappingAPITest, self).setUp()
         self.col = self.create_collection(foreign_id="map1")
-        aggregator = get_aggregator(self.col)
-        aggregator.delete()
+        ftmstore = get_ftmstore(self.col)
+        ftmstore.delete()
         _, self.headers = self.login(is_admin=True)
         self.rolex = self.create_user(foreign_id="user_3")
         _, self.headers_x = self.login(foreign_id="user_3")

@@ -16,7 +16,7 @@ from aleph.logic.collections import refresh_collection
 from aleph.logic.collections import MODEL_ORIGIN
 from aleph.logic.util import latin_alt
 from aleph.index import xref as xref_index
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 
 log = logging.getLogger(__name__)
 
@@ -40,10 +40,10 @@ def upsert_entity(data, collection, authz=None, sync=False, sign=False, job_id=N
     collection.touch()
 
     proxy = entity.to_proxy()
-    aggregator = get_aggregator(collection)
-    aggregator.delete(entity_id=proxy.id)
-    aggregator.put(proxy, origin=MODEL_ORIGIN)
-    profile_fragments(collection, aggregator, entity_id=proxy.id)
+    ftmstore = get_ftmstore(collection)
+    ftmstore.delete(entity_id=proxy.id)
+    ftmstore.put(proxy, origin=MODEL_ORIGIN)
+    profile_fragments(collection, ftmstore, entity_id=proxy.id)
 
     index.index_proxy(collection, proxy, sync=sync)
     refresh_entity(collection, proxy.id)
@@ -56,7 +56,7 @@ def update_entity(collection, entity_id=None, job_id=None):
     that should be done after each change to an entity but are too slow to run
     inside the request cycle.
 
-    Update xref and aggregator, trigger NER and re-index."""
+    Update xref and ftmstore, trigger NER and re-index."""
     from aleph.logic.xref import xref_entity
     from aleph.logic.profiles import profile_fragments
 
@@ -66,13 +66,13 @@ def update_entity(collection, entity_id=None, job_id=None):
     if collection.casefile:
         xref_entity(collection, proxy)
 
-    aggregator = get_aggregator(collection, origin=MODEL_ORIGIN)
-    profile_fragments(collection, aggregator, entity_id=entity_id)
-    inline_names(aggregator, proxy)
+    ftmstore = get_ftmstore(collection, origin=MODEL_ORIGIN)
+    profile_fragments(collection, ftmstore, entity_id=entity_id)
+    inline_names(ftmstore, proxy)
     pipeline_entity(collection, proxy, job_id=job_id)
 
 
-def inline_names(aggregator, proxy):
+def inline_names(ftmstore, proxy):
     """Attempt to solve a weird UI problem. Imagine, for example, we
     are showing a list of payments between a sender and a beneficiary to
     a user. They may now conduct a search for a term present in the sender
@@ -95,7 +95,7 @@ def inline_names(aggregator, proxy):
         name_proxy = model.make_entity(proxy.schema)
         name_proxy.id = proxy.id
         name_proxy.add(prop, names)
-        aggregator.put(name_proxy, fragment="names")
+        ftmstore.put(name_proxy, fragment="names")
 
 
 def validate_entity(data):
@@ -168,8 +168,8 @@ def prune_entity(collection, entity_id=None, job_id=None):
     Bookmark.delete_by_entity(entity_id)
     Mapping.delete_by_table(entity_id)
     xref_index.delete_xref(collection, entity_id=entity_id)
-    aggregator = get_aggregator(collection)
-    aggregator.delete(entity_id=entity_id)
+    ftmstore = get_ftmstore(collection)
+    ftmstore.delete(entity_id=entity_id)
     refresh_entity(collection, entity_id)
     collection.touch()
     db.session.commit()

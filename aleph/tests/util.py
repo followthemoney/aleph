@@ -20,7 +20,7 @@ from aleph.settings import SETTINGS
 from aleph.authz import Authz
 from aleph.model import Role, Collection, Permission, Entity
 from aleph.index.admin import delete_index, upgrade_search, clear_index
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 from aleph.logic.collections import update_collection, reindex_collection
 from aleph.logic.roles import create_system_roles
 from aleph.migration import destroy_db
@@ -210,14 +210,14 @@ class TestCase(unittest.TestCase):
         Permission.grant(self.public_coll, visitor, True, False)
         db.session.commit()
 
-        aggregator = get_aggregator(self.public_coll)
-        aggregator.delete()
+        ftmstore = get_ftmstore(self.public_coll)
+        ftmstore.delete()
         reindex_collection(self.public_coll, sync=True)
 
-        aggregator = get_aggregator(self.private_coll)
-        aggregator.delete()
+        ftmstore = get_ftmstore(self.private_coll)
+        ftmstore.delete()
         for sample in read_entities(self.get_fixture_path("samples.ijson")):
-            aggregator.put(sample, fragment="sample")
+            ftmstore.put(sample, fragment="sample")
         reindex_collection(self.private_coll, sync=True)
 
     def setUp(self):

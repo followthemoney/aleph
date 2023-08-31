@@ -5,7 +5,7 @@ from followthemoney.helpers import remove_checksums
 from aleph.core import db, archive
 from aleph.model import Mapping, Events, Status
 from aleph.index.entities import get_entity
-from aleph.logic.aggregator import get_aggregator
+from aleph.logic.ftmstore import get_ftmstore
 from aleph.index.collections import delete_entities
 from aleph.logic.collections import update_collection, index_entities, aggregate_model
 from aleph.logic.entitysets import save_entityset_item
@@ -29,10 +29,10 @@ def _get_table_csv_link(table):
     return url
 
 
-def _get_table(mapping, aggregator):
+def _get_table(mapping, ftmstore):
     table = get_entity(mapping.table_id)
     if table is None:
-        table = aggregator.get(mapping.table_id)
+        table = ftmstore.get(mapping.table_id)
     return table
 
 
@@ -40,15 +40,15 @@ def mapping_origin(mapping_id):
     return "mapping:%s" % mapping_id
 
 
-def map_to_aggregator(collection, mapping, aggregator):
-    table = _get_table(mapping, aggregator)
+def map_to_ftmstore(collection, mapping, ftmstore):
+    table = _get_table(mapping, ftmstore)
     if table is None:
         raise RuntimeError("Table cannot be found: %s" % mapping.table_id)
     config = {"csv_url": _get_table_csv_link(table), "entities": mapping.query}
     mapper = model.make_mapping(config, key_prefix=collection.foreign_id)
     origin = mapping_origin(mapping.id)
-    aggregator.delete(origin=origin)
-    writer = aggregator.bulk()
+    ftmstore.delete(origin=origin)
+    writer = ftmstore.bulk()
     idx = 0
     for idx, record in enumerate(mapper.source.records, 1):
         if idx > 0 and idx % 1000 == 0:
@@ -77,8 +77,8 @@ def load_mapping(collection, mapping_id, sync=False):
     if mapping is None:
         return log.error("Could not find mapping: %s", mapping_id)
     origin = mapping_origin(mapping.id)
-    aggregator = get_aggregator(collection)
-    aggregator.delete(origin=origin)
+    ftmstore = get_ftmstore(collection)
+    ftmstore.delete(origin=origin)
     delete_entities(collection.id, origin=origin, sync=True)
     if mapping.disabled:
         return log.info("Mapping is disabled: %s", mapping_id)
@@ -89,9 +89,9 @@ def load_mapping(collection, mapping_id, sync=False):
         actor_id=mapping.role_id,
     )
     try:
-        map_to_aggregator(collection, mapping, aggregator)
-        aggregate_model(collection, aggregator)
-        index_entities(collection, aggregator.iterate(), sync=sync)
+        map_to_ftmstore(collection, mapping, ftmstore)
+        aggregate_model(collection, ftmstore)
+        index_entities(collection, ftmstore.iterate(), sync=sync)
         mapping.set_status(status=Status.SUCCESS)
         collection.touch()
         db.session.commit()
@@ -99,15 +99,15 @@ def load_mapping(collection, mapping_id, sync=False):
         log.exception("Failed to load mapping.")
         mapping.set_status(status=Status.FAILED, error=str(exc))
         db.session.commit()
-        aggregator.delete(origin=origin)
+        ftmstore.delete(origin=origin)
 
 
 def flush_mapping(collection, mapping_id, sync=True):
     """Delete entities loaded by a mapping"""
     log.debug("Flushing entities for mapping: %s", mapping_id)
     origin = mapping_origin(mapping_id)
-    aggregator = get_aggregator(collection)
-    aggregator.delete(origin=origin)
+    ftmstore = get_ftmstore(collection)
+    ftmstore.delete(origin=origin)
     delete_entities(collection.id, origin=origin, sync=sync)
     update_collection(collection, sync=sync)
     collection.touch()
@@ -117,8 +117,8 @@ def flush_mapping(collection, mapping_id, sync=True):
 def cleanup_mappings():
     """Delete mappings where the associated table is gone."""
     for mapping in Mapping.all().order_by(Mapping.collection_id.desc()):
-        aggregator = get_aggregator(mapping.collection)
-        table = _get_table(mapping, aggregator)
+        ftmstore = get_ftmstore(mapping.collection)
+        table = _get_table(mapping, ftmstore)
         if table is not None:
             continue
         log.info("Orphaned mapping: %s", mapping.id)
